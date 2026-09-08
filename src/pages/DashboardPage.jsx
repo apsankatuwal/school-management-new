@@ -8,87 +8,99 @@ import { resources } from "../config/resources";
 import { userName } from "../utils/formatters";
 import Overview from "../components/dashboard/Overview";
 import ResourcePage from "../components/dashboard/ResourcePage";
+
+const defaultSectionFor = (role) => {
+  if (role === "admin") return "overview";
+  if (role === "teacher") return "attendance";
+  return "profile";
+};
+
 export default function DashboardPage() {
-  const { user, logout } = useAuth(),
-    go = useNavigate(),
-    [active, setActive] = useState(
-      user.role === "admin"
-        ? "overview"
-        : user.role === "teacher"
-          ? "attendance"
-          : "profile",
-    ),
-    [menu, setMenu] = useState(false),
-    [data, setData] = useState({});
-  const visible = Object.entries(resources).filter(([, x]) =>
-      x.roles.includes(user.role),
-    ),
-    choose = (id) => {
-      if (resources[id] && !resources[id].roles.includes(user.role)) return;
-      setActive(id);
-      setMenu(false);
-    };
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
+
+  const [active, setActive] = useState(() => defaultSectionFor(user.role));
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [dashboardData, setDashboardData] = useState({});
+
+  const visibleResources = Object.entries(resources).filter(([, resource]) =>
+    resource.roles.includes(user.role),
+  );
+
+  const selectSection = (id) => {
+    if (resources[id] && !resources[id].roles.includes(user.role)) return;
+    setActive(id);
+    setMenuOpen(false);
+  };
+
   useEffect(() => {
-    if (active === "overview")
-      dashboardService()
-        .then(({ data }) => setData(data.dashboard))
-        .catch((e) =>
-          toast.error(e.response?.data?.message || "Could not load dashboard."),
-        );
+    if (active !== "overview") return;
+
+    dashboardService()
+      .then(({ data }) => setDashboardData(data.dashboard))
+      .catch((error) =>
+        toast.error(error.response?.data?.message || "Could not load dashboard."),
+      );
   }, [active]);
-  const current = resources[active];
+
+  const handleLogout = () => {
+    logout();
+    navigate("/login", { replace: true });
+  };
+
+  const currentResource = resources[active];
+
   return (
     <div className="shell">
-      <aside className={menu ? "sidebar open" : "sidebar"}>
+      <aside className={menuOpen ? "sidebar open" : "sidebar"}>
         <div className="side-brand">
           <GraduationCap /> CampusFlow{" "}
-          <button onClick={() => setMenu(false)}>
+          <button onClick={() => setMenuOpen(false)}>
             <X />
           </button>
         </div>
+
         <nav>
           {user.role === "admin" && (
             <button
               className={active === "overview" ? "active" : ""}
-              onClick={() => choose("overview")}
+              onClick={() => selectSection("overview")}
             >
               <LayoutDashboard size={19} />
               Overview
             </button>
           )}
-          {visible.map(([id, x]) => {
-            const I = x.icon;
+
+          {visibleResources.map(([id, resource]) => {
+            const Icon = resource.icon;
             return (
               <button
                 key={id}
                 className={active === id ? "active" : ""}
-                onClick={() => choose(id)}
+                onClick={() => selectSection(id)}
               >
-                <I size={19} />
-                {x.label}
+                <Icon size={19} />
+                {resource.label}
               </button>
             );
           })}
         </nav>
+
         <div className="account">
           <div className="avatar">{user.firstName?.[0] || "U"}</div>
           <div>
             <b>{userName(user)}</b>
             <small>{user.role}</small>
           </div>
-          <button
-            onClick={() => {
-              logout();
-              go("/login", { replace: true });
-            }}
-          >
+          <button onClick={handleLogout}>
             <LogOut size={18} />
           </button>
         </div>
       </aside>
+
       <main>
         <header>
-          <button className="menu" onClick={() => setMenu(true)}>
+          <button className="menu" onClick={() => setMenuOpen(true)}>
             <Menu />
           </button>
           <div>
@@ -96,14 +108,15 @@ export default function DashboardPage() {
             <h1>
               {active === "overview"
                 ? `Welcome, ${user.firstName}`
-                : current?.label || "Your profile"}
+                : currentResource?.label || "Your profile"}
             </h1>
           </div>
         </header>
+
         {active === "overview" ? (
-          <Overview data={data} choose={choose} />
-        ) : current ? (
-          <ResourcePage config={current} role={user.role} />
+          <Overview data={dashboardData} choose={selectSection} />
+        ) : currentResource ? (
+          <ResourcePage config={currentResource} role={user.role} />
         ) : (
           <div className="content">
             <div className="panel">

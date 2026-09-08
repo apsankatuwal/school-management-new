@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom";
 
-const CustomButton = ({ text, link, className = "" }) => {
+export default function CustomButton({ text, link, className = "" }) {
   const navigate = useNavigate();
 
   return (
@@ -11,6 +11,4 @@ const CustomButton = ({ text, link, className = "" }) => {
       {text}
     </button>
   );
-};
-
-export default CustomButton;
+}

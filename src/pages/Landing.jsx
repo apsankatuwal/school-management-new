@@ -2,7 +2,7 @@ import Navbar from "../components/common/Navbar";
 import Hero from "../components/landingComponents/Hero";
 import Features from "../components/landingComponents/Features";
 
-const Landing = () => {
+export default function Landing() {
   return (
     <div>
       <Navbar />
@@ -10,6 +10,4 @@ const Landing = () => {
       <Features />
     </div>
   );
-};
-
-export default Landing;
+}

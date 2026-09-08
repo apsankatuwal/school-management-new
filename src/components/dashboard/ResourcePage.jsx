@@ -1,102 +1,130 @@
 /* eslint-disable react-hooks/set-state-in-effect, react-hooks/exhaustive-deps */
 import { useEffect, useMemo, useState } from "react";
-import { ChevronLeft, ChevronRight, Pencil, Plus, Search, Trash2 } from "lucide-react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  Pencil,
+  Plus,
+  Search,
+  Trash2,
+} from "lucide-react";
 import { toast } from "sonner";
 import { resourceService } from "../../api/resources";
 import RecordModal from "./RecordModal";
+
 export default function ResourcePage({ config, role }) {
-  const [rows, setRows] = useState([]),
-    [query, setQuery] = useState(""),
-    [loading, setLoading] = useState(true),
-    [error, setError] = useState(""),
-    [pagination, setPagination] = useState(null),
-    [page, setPage] = useState(1),
-    [modal, setModal] = useState(null);
-  const api = useMemo(() => resourceService(config.path), [config.path]),
-    write = (config.writeRoles || config.roles).includes(role),
-    del = (config.deleteRoles || config.writeRoles || config.roles).includes(
-      role,
-    );
-  const load = async () => {
+  const [rows, setRows] = useState([]);
+  const [query, setQuery] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [pagination, setPagination] = useState(null);
+  const [page, setPage] = useState(1);
+  const [modal, setModal] = useState(null); // null = closed, true = "add", object = "edit"
+
+  const api = useMemo(() => resourceService(config.path), [config.path]);
+  const canWrite = (config.writeRoles || config.roles).includes(role);
+  const canDelete = (config.deleteRoles || config.writeRoles || config.roles).includes(role);
+
+  const loadRows = async () => {
     setLoading(true);
     try {
-      const { data } = await api.list(config.search ? { page, limit: 10, search: query } : undefined);
+      const params = config.search ? { page, limit: 10, search: query } : undefined;
+      const { data } = await api.list(params);
       setRows(data[config.key] || []);
       setPagination(data.pagination || null);
       setError("");
-    } catch (e) {
-      setError(e.response?.data?.message || "Could not load records.");
+    } catch (err) {
+      setError(err.response?.data?.message || "Could not load records.");
     } finally {
       setLoading(false);
     }
   };
+
   useEffect(() => {
-    load();
+    loadRows();
   }, [config.path, page]);
-  const remove = async (id) => {
+
+  const handleDelete = async (id) => {
     if (!confirm("Delete this record?")) return;
+
     try {
       await api.remove(id);
       toast.success("Record deleted");
-      load();
-    } catch (e) {
-      toast.error(e.response?.data?.message || "Could not delete record.");
+      loadRows();
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Could not delete record.");
     }
   };
+
+  const handleSearchSubmit = (event) => {
+    event.preventDefault();
+    if (page === 1) loadRows();
+    else setPage(1);
+  };
+
+  const showActionsColumn = canWrite || canDelete;
+
   return (
     <div className="content">
       <div className="toolbar">
         {config.search ? (
-          <form
-            className="search"
-            onSubmit={(e) => {
-              e.preventDefault();
-              if (page === 1) load();
-              else setPage(1);
-            }}
-          >
+          <form className="search" onSubmit={handleSearchSubmit}>
             <Search size={18} />
             <input
               value={query}
               placeholder={`Search ${config.label.toLowerCase()}…`}
-              onChange={(e) => setQuery(e.target.value)}
+              onChange={(event) => setQuery(event.target.value)}
             />
           </form>
         ) : (
           <div />
         )}
-        {write && (
+
+        {canWrite && (
           <button className="primary" onClick={() => setModal(true)}>
             <Plus size={18} />
             Add {config.label.slice(0, -1)}
           </button>
         )}
       </div>
+
       {pagination && (
         <div className="pagination" aria-label="Pagination">
-          <span>Page {pagination.page} of {pagination.totalPages || 1}</span>
-          <button disabled={page <= 1} onClick={() => setPage((value) => value - 1)}><ChevronLeft size={16} /> Previous</button>
-          <button disabled={page >= pagination.totalPages} onClick={() => setPage((value) => value + 1)}>Next <ChevronRight size={16} /></button>
+          <span>
+            Page {pagination.page} of {pagination.totalPages || 1}
+          </span>
+          <button disabled={page <= 1} onClick={() => setPage((value) => value - 1)}>
+            <ChevronLeft size={16} /> Previous
+          </button>
+          <button
+            disabled={page >= pagination.totalPages}
+            onClick={() => setPage((value) => value + 1)}
+          >
+            Next <ChevronRight size={16} />
+          </button>
         </div>
       )}
+
       {error && (
         <div className="api-error">
           {error}
-          <button onClick={load}>Retry</button>
+          <button onClick={loadRows}>Retry</button>
         </div>
       )}
+
       <div className="table-card">
         <div className="table-head">
           <h2>All {config.label}</h2>
         </div>
+
         <div className="table-wrap">
           <table>
             <thead>
               <tr>
-                {config.cols.map(([h]) => (
-                  <th key={h}>{h}</th>
+                {config.cols.map(([header]) => (
+                  <th key={header}>{header}</th>
                 ))}
-                {(write || del) && <th />}
+                {showActionsColumn && <th />}
               </tr>
             </thead>
             <tbody>
@@ -107,25 +135,22 @@ export default function ResourcePage({ config, role }) {
                   </td>
                 </tr>
               ) : rows.length ? (
-                rows.map((r) => (
-                  <tr key={r._id}>
-                    {config.cols.map(([h, a]) => (
-                      <td key={h}>
-                        {typeof a === "function" ? a(r) : r[a] || "—"}
+                rows.map((row) => (
+                  <tr key={row._id}>
+                    {config.cols.map(([header, accessor]) => (
+                      <td key={header}>
+                        {typeof accessor === "function" ? accessor(row) : row[accessor] || "—"}
                       </td>
                     ))}
-                    {(write || del) && (
+                    {showActionsColumn && (
                       <td className="actions">
-                        {write && (
-                          <button aria-label="Edit" onClick={() => setModal(r)}>
+                        {canWrite && (
+                          <button aria-label="Edit" onClick={() => setModal(row)}>
                             <Pencil size={16} />
                           </button>
                         )}
-                        {del && (
-                          <button
-                            aria-label="Delete"
-                            onClick={() => remove(r._id)}
-                          >
+                        {canDelete && (
+                          <button aria-label="Delete" onClick={() => handleDelete(row._id)}>
                             <Trash2 size={16} />
                           </button>
                         )}
@@ -144,12 +169,13 @@ export default function ResourcePage({ config, role }) {
           </table>
         </div>
       </div>
+
       {modal && (
         <RecordModal
           config={config}
           record={modal === true ? null : modal}
           close={() => setModal(null)}
-          done={load}
+          done={loadRows}
         />
       )}
     </div>

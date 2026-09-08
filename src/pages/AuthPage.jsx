@@ -5,38 +5,59 @@ import { toast } from "sonner";
 import { authService } from "../api/auth";
 import { useAuth } from "../contexts/AuthContext";
 import { human } from "../utils/formatters";
+
+const LOGIN_FIELDS = ["email", "password"];
+const REGISTER_FIELDS = ["firstName", "lastName", "email", "password", "role"];
+
 export default function AuthPage() {
-  const [reg, setReg] = useState(false),
-    [form, setForm] = useState({}),
-    [busy, setBusy] = useState(false);
-  const { login, authenticated, checking } = useAuth(),
-    go = useNavigate(),
-    set = (k, v) => setForm((x) => ({ ...x, [k]: v })),
-    fields = reg
-      ? ["firstName", "lastName", "email", "password", "role"]
-      : ["email", "password"];
-  if (checking) return <div className="page-loading">Checking your session…</div>;
-  if (authenticated) return <Navigate to="/dashboard" replace />;
-  const submit = async (e) => {
-    e.preventDefault();
+  const [isRegisterMode, setIsRegisterMode] = useState(false);
+  const [form, setForm] = useState({});
+  const [busy, setBusy] = useState(false);
+
+  const { login, authenticated, checking } = useAuth();
+  const navigate = useNavigate();
+
+  const fields = isRegisterMode ? REGISTER_FIELDS : LOGIN_FIELDS;
+
+  const updateField = (key, value) =>
+    setForm((current) => ({ ...current, [key]: value }));
+
+  const toggleMode = () => {
+    setIsRegisterMode((current) => !current);
+    setForm({});
+  };
+
+  if (checking) {
+    return <div className="page-loading">Checking your session…</div>;
+  }
+
+  if (authenticated) {
+    return <Navigate to="/dashboard" replace />;
+  }
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
     setBusy(true);
+
     try {
-      const { data } = reg
+      const { data } = isRegisterMode
         ? await authService.register(form)
         : await authService.login(form);
+
       login(data);
       toast.success(data.message);
-      go("/dashboard", { replace: true });
-    } catch (err) {
+      navigate("/dashboard", { replace: true });
+    } catch (error) {
       toast.error(
-        err.response?.data?.errors?.[0]?.msg ||
-          err.response?.data?.message ||
+        error.response?.data?.errors?.[0]?.msg ||
+          error.response?.data?.message ||
           "Unable to continue.",
       );
     } finally {
       setBusy(false);
     }
   };
+
   return (
     <div className="login-page">
       <div className="login-art">
@@ -48,23 +69,26 @@ export default function AuthPage() {
           <p>Manage academic life with clarity, confidence, and care.</p>
         </div>
       </div>
-      <form className="login-card" onSubmit={submit}>
+
+      <form className="login-card" onSubmit={handleSubmit}>
         <span className="brand-mobile">
           <GraduationCap /> CampusFlow
         </span>
-        <h2>{reg ? "Create an account" : "Welcome back"}</h2>
+
+        <h2>{isRegisterMode ? "Create an account" : "Welcome back"}</h2>
         <p>
-          {reg
+          {isRegisterMode
             ? "Uses the backend’s public registration endpoint."
             : "Sign in to your school workspace."}
         </p>
-        {fields.map((f) => (
-          <label key={f}>
-            {human(f)}
-            {f === "role" ? (
+
+        {fields.map((field) => (
+          <label key={field}>
+            {human(field)}
+            {field === "role" ? (
               <select
                 value={form.role || "student"}
-                onChange={(e) => set(f, e.target.value)}
+                onChange={(event) => updateField(field, event.target.value)}
               >
                 <option value="student">Student</option>
                 <option value="teacher">Teacher</option>
@@ -73,33 +97,28 @@ export default function AuthPage() {
             ) : (
               <input
                 required
-                minLength={f === "password" ? 6 : undefined}
+                minLength={field === "password" ? 6 : undefined}
                 type={
-                  f === "password"
+                  field === "password"
                     ? "password"
-                    : f === "email"
+                    : field === "email"
                       ? "email"
                       : "text"
                 }
-                value={form[f] || ""}
-                onChange={(e) => set(f, e.target.value)}
+                value={form[field] || ""}
+                onChange={(event) => updateField(field, event.target.value)}
               />
             )}
           </label>
         ))}
+
         <button className="primary full" disabled={busy}>
-          {busy ? "Please wait…" : reg ? "Register" : "Sign in"}
+          {busy ? "Please wait…" : isRegisterMode ? "Register" : "Sign in"}
           <ChevronRight size={17} />
         </button>
-        <button
-          type="button"
-          className="auth-switch"
-          onClick={() => {
-            setReg(!reg);
-            setForm({});
-          }}
-        >
-          {reg
+
+        <button type="button" className="auth-switch" onClick={toggleMode}>
+          {isRegisterMode
             ? "Already have an account? Sign in"
             : "Need an account? Register"}
         </button>

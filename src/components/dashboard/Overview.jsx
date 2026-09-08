@@ -6,13 +6,15 @@ import {
   GraduationCap,
   LayoutDashboard,
 } from "lucide-react";
+
 export default function Overview({ data, choose }) {
   const cards = [
-    ["Students", data.totalStudents, GraduationCap, "students", "indigo"],
-    ["Teachers", data.totalTeachers, GraduationCap, "teachers", "orange"],
-    ["Classes", data.totalClasses, LayoutDashboard, "classes", "cyan"],
-    ["Subjects", data.totalSubjects, BookOpen, "subjects", "pink"],
+    { label: "Students", value: data.totalStudents, icon: GraduationCap, id: "students", color: "indigo" },
+    { label: "Teachers", value: data.totalTeachers, icon: GraduationCap, id: "teachers", color: "orange" },
+    { label: "Classes", value: data.totalClasses, icon: LayoutDashboard, id: "classes", color: "cyan" },
+    { label: "Subjects", value: data.totalSubjects, icon: BookOpen, id: "subjects", color: "pink" },
   ];
+
   return (
     <div className="content">
       <section className="hero-banner">
@@ -26,20 +28,22 @@ export default function Overview({ data, choose }) {
         </div>
         <CalendarCheck size={120} />
       </section>
+
       <div className="stats">
-        {cards.map(([l, v, I, id, color]) => (
-          <button className="stat" key={l} onClick={() => choose(id)}>
+        {cards.map(({ label, value, icon: Icon, id, color }) => (
+          <button className="stat" key={label} onClick={() => choose(id)}>
             <div className={`stat-icon ${color}`}>
-              <I size={21} />
+              <Icon size={21} />
             </div>
-            <span>{l}</span>
-            <strong>{v ?? 0}</strong>
+            <span>{label}</span>
+            <strong>{value ?? 0}</strong>
             <em>
               Manage <ChevronRight size={15} />
             </em>
           </button>
         ))}
       </div>
+
       <section className="overview-grid">
         <div className="panel">
           <div className="panel-title">
@@ -62,6 +66,7 @@ export default function Overview({ data, choose }) {
             </div>
           </div>
         </div>
+
         <div className="panel quick">
           <span className="eyebrow">QUICK ACTIONS</span>
           <h3>Keep things moving</h3>

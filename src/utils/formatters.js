@@ -1,4 +1,17 @@
-export const date=v=>v?new Date(v).toLocaleDateString():"—";
-export const userName=v=>v?.firstName?`${v.firstName} ${v.lastName||""}`.trim():"—";
-export const itemLabel=(v,fallback="—")=>v?.admissionNumber||v?.employeeId||v?.subjectName||v?.examName||v?.className||fallback;
-export const human=k=>k.replace(/([A-Z])/g," $1").replace(/^./,x=>x.toUpperCase());
+export const date = (value) =>
+  value ? new Date(value).toLocaleDateString() : "—";
+
+export const userName = (user) =>
+  user?.firstName ? `${user.firstName} ${user.lastName || ""}`.trim() : "—";
+
+export const itemLabel = (item, fallback = "—") =>
+  item?.admissionNumber ||
+  item?.employeeId ||
+  item?.subjectName ||
+  item?.examName ||
+  item?.className ||
+  fallback;
+
+// "firstName" -> "First name"
+export const human = (key) =>
+  key.replace(/([A-Z])/g, " $1").replace(/^./, (c) => c.toUpperCase());
