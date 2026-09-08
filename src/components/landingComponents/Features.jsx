@@ -1,5 +1,4 @@
 import {  GraduationCap,Users, UserCheck, ClipboardList,  BarChart3, Wallet,  LayoutDashboard,} from "lucide-react";
-import React from "react";
 const featuresData = [
   {
     title: "Student Management",

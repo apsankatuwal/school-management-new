@@ -1,25 +1,9 @@
-import React from 'react'
-import { BrowserRouter, Route, Routes }
-from 'react-router-dom'
-import Landing from './pages/landing'
-import About from './pages/about'
-
-const App = () => {
-  return (
-    <BrowserRouter>
-    <Routes>
-
-      <Route path="/" element={<Landing />} />
-      <Route path="/About" element={<About />} />
-      
-
-
-  
-    </Routes>
-
-    </BrowserRouter>
-  )
-}
-
-
-export default App
+import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import { Toaster } from "sonner";
+import { AuthProvider } from "./contexts/AuthContext";
+import ProtectedRoute from "./routes/ProtectedRoute";
+import AuthPage from "./pages/AuthPage";
+import DashboardPage from "./pages/DashboardPage";
+import "./App.css";
+import "./dashboard.css";
+export default function App(){return <BrowserRouter><AuthProvider><Routes><Route path="/login" element={<AuthPage/>}/><Route element={<ProtectedRoute/>}><Route path="/dashboard" element={<DashboardPage/>}/></Route><Route path="*" element={<Navigate to="/dashboard" replace/>}/></Routes><Toaster richColors position="top-right"/></AuthProvider></BrowserRouter>}

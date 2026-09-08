@@ -1,19 +1,26 @@
 import axios from "axios";
 
-const baseUrl = ProcessingInstruction.env.VITE_API_BASE_URL
-
 const api = axios.create({
-baseURL: baseUrl
+  baseURL: import.meta.env.VITE_API_BASE_URL,
+  headers: { "Content-Type": "application/json" },
+});
 
-})
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem("school_management_token");
+  if (token) config.headers.Authorization = `Bearer ${token}`;
+  return config;
+});
 
-api.interceptors.request.use((config)=>{
-    const token = localStorage.getItem("token");
-
-config.headers.Authorization= `Bearer ${token}`;
-
-return config;
-
-})
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      localStorage.removeItem("school_management_token");
+      localStorage.removeItem("school_management_user");
+      window.dispatchEvent(new Event("school-management:unauthorized"));
+    }
+    return Promise.reject(error);
+  },
+);
 
 export default api;

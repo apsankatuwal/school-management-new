@@ -1,5 +1,4 @@
 import { GraduationCap } from 'lucide-react'
-import React from 'react'
 import CustomButton from './CustomButton'
 
 const Navbar = () => {
