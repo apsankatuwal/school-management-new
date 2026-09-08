@@ -1,9 +1,9 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { X } from "lucide-react";
 import { toast } from "sonner";
 import { resourceService } from "../../api/resources";
-import { numericFields, optionalFields } from "../../config/resources";
-import { human } from "../../utils/formatters";
+import { linkedResources, numericFields, optionalFields, selectOptions } from "../../config/resources";
+import { human, itemLabel } from "../../utils/formatters";
 export default function RecordModal({ config, record, close, done }) {
   const [values, setValues] = useState(() =>
       Object.fromEntries(
@@ -19,7 +19,21 @@ export default function RecordModal({ config, record, close, done }) {
       ),
     ),
     [busy, setBusy] = useState(false),
+    [links, setLinks] = useState({}),
     set = (k, v) => setValues((x) => ({ ...x, [k]: v }));
+  useEffect(() => {
+    const resourceNames = [...new Set(config.fields.map((field) => linkedResources[field]).filter(Boolean))];
+    let active = true;
+    Promise.all(resourceNames.map(async (name) => {
+      try {
+        const { data } = await resourceService(`/${name}`).list({ limit: 100 });
+        return [name, data[name] || []];
+      } catch {
+        return [name, []];
+      }
+    })).then((entries) => active && setLinks(Object.fromEntries(entries)));
+    return () => { active = false; };
+  }, [config.fields]);
   const submit = async (e) => {
     e.preventDefault();
     setBusy(true);
@@ -57,14 +71,27 @@ export default function RecordModal({ config, record, close, done }) {
         </div>
         {config.fields.includes("user") && (
           <p className="form-note">
-            Requires an existing User MongoDB ID; the API has no user directory.
+            This API requires an existing User MongoDB ID. It has no user directory endpoint, so create the user through registration and paste its ID here.
+          </p>
+        )}
+        {config.fields.some((field) => linkedResources[field]) && (
+          <p className="form-note">
+            Related records appear as selectors when your role can retrieve them. If one is unavailable, enter its MongoDB ID supplied by your school administrator.
           </p>
         )}
         <div className="form-grid">
-          {config.fields.map((f) => (
-            <label key={f}>
+          {config.fields.map((f) => {
+            const linked = linkedResources[f];
+            const options = linked ? links[linked] : config.options?.[f] || selectOptions[f];
+            return <label key={f}>
               {human(f)}
-              <input
+              {options?.length ? <select required={!optionalFields.has(f)} value={values[f]} onChange={(e) => set(f, e.target.value)}>
+                <option value="">Select {human(f)}</option>
+                {options.map((option) => {
+                  const id = typeof option === "string" ? option : option._id;
+                  return <option key={id} value={id}>{typeof option === "string" ? option : itemLabel(option, option._id)}</option>;
+                })}
+              </select> : <input
                 required={!optionalFields.has(f)}
                 type={
                   f.toLowerCase().includes("date")
@@ -76,8 +103,9 @@ export default function RecordModal({ config, record, close, done }) {
                 value={values[f]}
                 onChange={(e) => set(f, e.target.value)}
               />
-            </label>
-          ))}
+              }
+            </label>;
+          })}
         </div>
         <div className="modal-actions">
           <button type="button" className="secondary" onClick={close}>

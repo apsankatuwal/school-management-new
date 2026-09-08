@@ -33,6 +33,11 @@ export const numericFields = new Set([
     subject: "subjects",
     exam: "exams",
   };
+export const selectOptions = {
+  gender: ["Male", "Female", "Other"],
+  paymentMethod: ["Cash", "Card", "Bank Transfer", "Online"],
+  role: ["admin", "teacher", "student"],
+};
 const c = (label, icon, path, key, roles, fields, cols, extra = {}) => ({
   label,
   icon,
@@ -135,6 +140,7 @@ export const resources = {
       ["Subject", (r) => itemLabel(r.subject)],
       ["Status", "status"],
     ],
+    { options: { status: ["Present", "Absent", "Late"] } },
   ),
   exams: c(
     "Exams",
@@ -181,5 +187,6 @@ export const resources = {
       ["Status", "status"],
       ["Method", "paymentMethod"],
     ],
+    { options: { status: ["Pending", "Paid", "Overdue"] } },
   ),
 };

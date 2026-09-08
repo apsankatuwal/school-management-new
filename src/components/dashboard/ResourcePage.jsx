@@ -1,6 +1,6 @@
 /* eslint-disable react-hooks/set-state-in-effect, react-hooks/exhaustive-deps */
 import { useEffect, useMemo, useState } from "react";
-import { Pencil, Plus, Search, Trash2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, Pencil, Plus, Search, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { resourceService } from "../../api/resources";
 import RecordModal from "./RecordModal";
@@ -9,6 +9,8 @@ export default function ResourcePage({ config, role }) {
     [query, setQuery] = useState(""),
     [loading, setLoading] = useState(true),
     [error, setError] = useState(""),
+    [pagination, setPagination] = useState(null),
+    [page, setPage] = useState(1),
     [modal, setModal] = useState(null);
   const api = useMemo(() => resourceService(config.path), [config.path]),
     write = (config.writeRoles || config.roles).includes(role),
@@ -18,10 +20,9 @@ export default function ResourcePage({ config, role }) {
   const load = async () => {
     setLoading(true);
     try {
-      const { data } = await api.list(
-        config.search ? { page: 1, limit: 10, search: query } : undefined,
-      );
+      const { data } = await api.list(config.search ? { page, limit: 10, search: query } : undefined);
       setRows(data[config.key] || []);
+      setPagination(data.pagination || null);
       setError("");
     } catch (e) {
       setError(e.response?.data?.message || "Could not load records.");
@@ -31,7 +32,7 @@ export default function ResourcePage({ config, role }) {
   };
   useEffect(() => {
     load();
-  }, [config.path]);
+  }, [config.path, page]);
   const remove = async (id) => {
     if (!confirm("Delete this record?")) return;
     try {
@@ -50,7 +51,8 @@ export default function ResourcePage({ config, role }) {
             className="search"
             onSubmit={(e) => {
               e.preventDefault();
-              load();
+              if (page === 1) load();
+              else setPage(1);
             }}
           >
             <Search size={18} />
@@ -70,6 +72,13 @@ export default function ResourcePage({ config, role }) {
           </button>
         )}
       </div>
+      {pagination && (
+        <div className="pagination" aria-label="Pagination">
+          <span>Page {pagination.page} of {pagination.totalPages || 1}</span>
+          <button disabled={page <= 1} onClick={() => setPage((value) => value - 1)}><ChevronLeft size={16} /> Previous</button>
+          <button disabled={page >= pagination.totalPages} onClick={() => setPage((value) => value + 1)}>Next <ChevronRight size={16} /></button>
+        </div>
+      )}
       {error && (
         <div className="api-error">
           {error}

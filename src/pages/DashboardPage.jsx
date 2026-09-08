@@ -109,6 +109,10 @@ export default function DashboardPage() {
             <div className="panel">
               <h2>{userName(user)}</h2>
               <p>{user.email}</p>
+              <p className="profile-id">
+                <span>MongoDB user ID</span>
+                <code>{user.id || user._id || "Unavailable"}</code>
+              </p>
               <p>
                 The backend currently provides no student portal resource
                 endpoints.

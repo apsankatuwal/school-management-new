@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Navigate, useNavigate } from "react-router-dom";
 import { ChevronRight, GraduationCap } from "lucide-react";
 import { toast } from "sonner";
 import { authService } from "../api/auth";
@@ -9,12 +9,14 @@ export default function AuthPage() {
   const [reg, setReg] = useState(false),
     [form, setForm] = useState({}),
     [busy, setBusy] = useState(false);
-  const { login } = useAuth(),
+  const { login, authenticated, checking } = useAuth(),
     go = useNavigate(),
     set = (k, v) => setForm((x) => ({ ...x, [k]: v })),
     fields = reg
       ? ["firstName", "lastName", "email", "password", "role"]
       : ["email", "password"];
+  if (checking) return <div className="page-loading">Checking your session…</div>;
+  if (authenticated) return <Navigate to="/dashboard" replace />;
   const submit = async (e) => {
     e.preventDefault();
     setBusy(true);
