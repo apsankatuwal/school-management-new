@@ -15,6 +15,7 @@ const buildInitialValues = (config, record) =>
     config.fields.map((field) => {
       const value = record?.[field];
       const isDateField = field.toLowerCase().includes("date") && value;
+
       return [
         field,
         isDateField
@@ -25,34 +26,65 @@ const buildInitialValues = (config, record) =>
   );
 
 export default function RecordModal({ config, record, close, done }) {
-  const [values, setValues] = useState(() => buildInitialValues(config, record));
+  const [values, setValues] = useState(() =>
+    buildInitialValues(config, record),
+  );
   const [busy, setBusy] = useState(false);
   const [linkedOptions, setLinkedOptions] = useState({});
 
-  const updateField = (key, value) =>
-    setValues((current) => ({ ...current, [key]: value }));
+  const updateField = (key, value) => {
+    setValues((current) => ({
+      ...current,
+      [key]: value,
+    }));
+  };
 
-  // Fetch dropdown options for any linked fields (e.g. "teacher" -> Teachers list)
   useEffect(() => {
     const resourceNames = [
-      ...new Set(config.fields.map((field) => linkedResources[field]).filter(Boolean)),
+      ...new Set(
+        config.fields
+          .map((field) => linkedResources[field])
+          .filter(Boolean),
+      ),
     ];
 
-    let isMounted = true;
+    let mounted = true;
 
-    Promise.all(
-      resourceNames.map(async (name) => {
+    const loadOptions = async () => {
+      const result = {};
+
+      for (const name of resourceNames) {
         try {
-          const { data } = await resourceService(`/${name}`).list({ limit: 100 });
-          return [name, data[name] || []];
-        } catch {
-          return [name, []];
+          const response = await resourceService(`/${name}`).list({
+            limit: 100,
+          });
+
+          const data = response.data;
+
+          if (Array.isArray(data)) {
+            result[name] = data;
+          } else if (Array.isArray(data?.[name])) {
+            result[name] = data[name];
+          } else if (Array.isArray(data?.data)) {
+            result[name] = data.data;
+          } else {
+            result[name] = [];
+          }
+        } catch (error) {
+          console.error(`Failed to load ${name}:`, error);
+          result[name] = [];
         }
-      }),
-    ).then((entries) => isMounted && setLinkedOptions(Object.fromEntries(entries)));
+      }
+
+      if (mounted) {
+        setLinkedOptions(result);
+      }
+    };
+
+    loadOptions();
 
     return () => {
-      isMounted = false;
+      mounted = false;
     };
   }, [config.fields]);
 
@@ -64,8 +96,13 @@ export default function RecordModal({ config, record, close, done }) {
       const body = Object.fromEntries(
         Object.entries(values)
           .filter(([, value]) => value !== "")
-          .map(([key, value]) => [key, numericFields.has(key) ? Number(value) : value]),
+          .map(([key, value]) => [
+            key,
+            numericFields.has(key) ? Number(value) : value,
+          ]),
       );
+
+      console.log("Submitting:", body);
 
       if (record) {
         await resourceService(config.path).update(record._id, body);
@@ -74,18 +111,20 @@ export default function RecordModal({ config, record, close, done }) {
       }
 
       toast.success(record ? "Record updated" : "Record created");
+
       done();
       close();
     } catch (err) {
+      console.error("Save error:", err);
+
       toast.error(
-        err.response?.data?.message || "Could not save record. Check linked MongoDB IDs.",
+        err.response?.data?.message ||
+          "Could not save record.",
       );
     } finally {
       setBusy(false);
     }
   };
-
-  const hasLinkedField = config.fields.some((field) => linkedResources[field]);
 
   return (
     <div className="modal-backdrop">
@@ -94,6 +133,7 @@ export default function RecordModal({ config, record, close, done }) {
           <h2>
             {record ? "Update" : "Add"} {config.label.slice(0, -1)}
           </h2>
+
           <button type="button" onClick={close}>
             <X />
           </button>
@@ -101,72 +141,128 @@ export default function RecordModal({ config, record, close, done }) {
 
         {config.fields.includes("user") && (
           <p className="form-note">
-            This API requires an existing User MongoDB ID. It has no user
-            directory endpoint, so create the user through registration and
-            paste its ID here.
-          </p>
-        )}
-
-        {hasLinkedField && (
-          <p className="form-note">
-            Related records appear as selectors when your role can retrieve
-            them. If one is unavailable, enter its MongoDB ID supplied by
-            your school administrator.
+            This API requires an existing User MongoDB ID.
           </p>
         )}
 
         <div className="form-grid">
           {config.fields.map((field) => {
-            const linkedResourceName = linkedResources[field];
-            const options = linkedResourceName
-              ? linkedOptions[linkedResourceName]
+            const linkedResource = linkedResources[field];
+
+            const options = linkedResource
+              ? linkedOptions[linkedResource] || []
               : config.options?.[field] || selectOptions[field];
 
-            return (
-              <label key={field}>
-                {human(field)}
-                {options?.length ? (
+            /*
+             * Linked fields MUST use MongoDB IDs.
+             * Never fall back to a text input for them.
+             */
+            if (linkedResource) {
+              return (
+                <label key={field}>
+                  {human(field)}
+
                   <select
                     required={!optionalFields.has(field)}
-                    value={values[field]}
-                    onChange={(event) => updateField(field, event.target.value)}
+                    value={values[field] || ""}
+                    onChange={(event) =>
+                      updateField(field, event.target.value)
+                    }
                   >
-                    <option value="">Select {human(field)}</option>
+                    <option value="">
+                      Select {human(field)}
+                    </option>
+
                     {options.map((option) => {
-                      const id = typeof option === "string" ? option : option._id;
-                      const label =
-                        typeof option === "string" ? option : itemLabel(option, option._id);
+                      if (typeof option === "string") {
+                        return (
+                          <option key={option} value={option}>
+                            {option}
+                          </option>
+                        );
+                      }
+
+                      if (!option?._id) {
+                        return null;
+                      }
+
                       return (
-                        <option key={id} value={id}>
-                          {label}
+                        <option
+                          key={option._id}
+                          value={option._id}
+                        >
+                          {itemLabel(option, option._id)}
                         </option>
                       );
                     })}
                   </select>
-                ) : (
-                  <input
+                </label>
+              );
+            }
+
+            if (options?.length) {
+              return (
+                <label key={field}>
+                  {human(field)}
+
+                  <select
                     required={!optionalFields.has(field)}
-                    type={
-                      field.toLowerCase().includes("date")
-                        ? "date"
-                        : numericFields.has(field)
-                          ? "number"
-                          : "text"
+                    value={values[field] || ""}
+                    onChange={(event) =>
+                      updateField(field, event.target.value)
                     }
-                    value={values[field]}
-                    onChange={(event) => updateField(field, event.target.value)}
-                  />
-                )}
+                  >
+                    <option value="">
+                      Select {human(field)}
+                    </option>
+
+                    {options.map((option) => (
+                      <option key={option} value={option}>
+                        {option}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              );
+            }
+
+            return (
+              <label key={field}>
+                {human(field)}
+
+                <input
+                  required={!optionalFields.has(field)}
+                  type={
+                    field.toLowerCase().includes("date")
+                      ? "date"
+                      : numericFields.has(field)
+                        ? "number"
+                        : "text"
+                  }
+                  value={values[field] || ""}
+                  onChange={(event) =>
+                    updateField(field, event.target.value)
+                  }
+                />
               </label>
             );
           })}
         </div>
 
         <div className="modal-actions">
-          <button type="button" className="secondary" onClick={close}>
+          <button
+            type="button"
+            className="secondary"
+            onClick={close}
+          >
             Cancel
           </button>
-          <button className="primary" disabled={busy}>
+
+          <button
+            type="submit"
+            className="primary"
+            disabled={busy}
+          >
             {busy ? "Saving…" : "Save record"}
           </button>
         </div>
