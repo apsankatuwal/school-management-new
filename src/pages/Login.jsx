@@ -53,8 +53,7 @@ const Login = () => {
         remember,
       });
 
-      /*
-      Example when backend is connected:
+      
 
       const response = await api.post("/auth/login", {
         email: data.email,
@@ -62,7 +61,7 @@ const Login = () => {
       });
 
       login(response.data.token, response.data.user);
-      */
+      
 
       toast.success("Login successful!");
 
