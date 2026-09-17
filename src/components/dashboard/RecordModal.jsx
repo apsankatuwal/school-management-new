@@ -10,6 +10,14 @@ import {
 } from "../../config/resources";
 import { human, itemLabel } from "../../utils/formatters";
 
+const today = () => {
+  const now = new Date();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+
+  return `${now.getFullYear()}-${month}-${day}`;
+};
+
 const buildInitialValues = (config, record) =>
   Object.fromEntries(
     config.fields.map((field) => {
@@ -26,6 +34,7 @@ const buildInitialValues = (config, record) =>
   );
 
 export default function RecordModal({ config, record, close, done }) {
+  const maxDateOfBirth = today();
   const [values, setValues] = useState(() =>
     buildInitialValues(config, record),
   );
@@ -90,6 +99,12 @@ export default function RecordModal({ config, record, close, done }) {
 
   const handleSubmit = async (event) => {
     event.preventDefault();
+
+    if (values.dateOfBirth && values.dateOfBirth > maxDateOfBirth) {
+      toast.error("Date of birth cannot be in the future.");
+      return;
+    }
+
     setBusy(true);
 
     try {
@@ -131,7 +146,7 @@ export default function RecordModal({ config, record, close, done }) {
       <form className="modal" onSubmit={handleSubmit}>
         <div className="modal-head">
           <h2>
-            {record ? "Update" : "Add"} {config.label.slice(0, -1)}
+            {record ? "Update" : "Add"} {config.singular || config.label.slice(0, -1)}
           </h2>
 
           <button type="button" onClick={close}>
@@ -239,6 +254,7 @@ export default function RecordModal({ config, record, close, done }) {
                         ? "number"
                         : "text"
                   }
+                  max={field === "dateOfBirth" ? maxDateOfBirth : undefined}
                   value={values[field] || ""}
                   onChange={(event) =>
                     updateField(field, event.target.value)

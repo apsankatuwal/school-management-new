@@ -83,7 +83,7 @@ export default function ResourcePage({ config, role }) {
         {canWrite && (
           <button className="primary" onClick={() => setModal(true)}>
             <Plus size={18} />
-            Add {config.label.slice(0, -1)}
+            Add {config.singular || config.label.slice(0, -1)}
           </button>
         )}
       </div>

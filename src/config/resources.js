@@ -5,8 +5,10 @@ import {
   CreditCard,
   GraduationCap,
   LayoutDashboard,
+  Users,
 } from "lucide-react";
 import { date, itemLabel, userName } from "../utils/formatters";
+
 export const numericFields = new Set([
     "rollNumber",
     "experience",
@@ -24,6 +26,9 @@ export const numericFields = new Set([
     "remarks",
     "paidDate",
     "classTeacher",
+    "password", // required on create, but leave blank on edit to keep the current one
+    "isActive",
+    "phone",
   ]),
   linkedResources = {
     classTeacher: "teachers",
@@ -33,11 +38,14 @@ export const numericFields = new Set([
     subject: "subjects",
     exam: "exams",
   };
+
 export const selectOptions = {
   gender: ["Male", "Female", "Other"],
   paymentMethod: ["Cash", "Card", "Bank Transfer", "Online"],
   role: ["admin", "teacher", "student"],
+  isActive: ["true", "false"],
 };
+
 const c = (label, icon, path, key, roles, fields, cols, extra = {}) => ({
   label,
   icon,
@@ -48,7 +56,23 @@ const c = (label, icon, path, key, roles, fields, cols, extra = {}) => ({
   cols,
   ...extra,
 });
+
 export const resources = {
+  users: c(
+    "Users",
+    Users,
+    "/admin/users",
+    "users",
+    ["admin"],
+    ["firstName", "lastName", "email", "password", "role", "phone", "isActive"],
+    [
+      ["Name", (r) => userName(r)],
+      ["Email", "email"],
+      ["Role", "role"],
+      ["Status", (r) => (r.isActive === false ? "Inactive" : "Active")],
+    ],
+    { search: true },
+  ),
   students: c(
     "Students",
     GraduationCap,
@@ -56,7 +80,11 @@ export const resources = {
     "students",
     ["admin"],
     [
-      "user",
+      "firstName",
+      "lastName",
+      "email",
+      "password",
+      "phone",
       "admissionNumber",
       "className",
       "section",
@@ -75,33 +103,33 @@ export const resources = {
     ],
     { search: true },
   ),
-teachers: c(
-  "Teachers",
-  GraduationCap,
-  "/teachers",
-  "teachers",
-  ["admin"],
-  [
-    "firstName",
-    "lastName",
-    "email",
-    "password",
-    "employeeId",
-    "department",
-    "qualification",
-    "experience",
-    "phone",
-    "address",
-    "salary",
-  ],
-  [
-    ["Teacher", (r) => userName(r.user)],
-    ["Employee ID", "employeeId"],
-    ["Department", "department"],
-    ["Phone", "phone"],
-  ],
-  { search: true },
-),
+  teachers: c(
+    "Teachers",
+    GraduationCap,
+    "/teachers",
+    "teachers",
+    ["admin"],
+    [
+      "firstName",
+      "lastName",
+      "email",
+      "password",
+      "employeeId",
+      "department",
+      "qualification",
+      "experience",
+      "phone",
+      "address",
+      "salary",
+    ],
+    [
+      ["Teacher", (r) => userName(r.user)],
+      ["Employee ID", "employeeId"],
+      ["Department", "department"],
+      ["Phone", "phone"],
+    ],
+    { search: true },
+  ),
   classes: c(
     "Classes",
     LayoutDashboard,
@@ -115,6 +143,7 @@ teachers: c(
       ["Teacher", (r) => itemLabel(r.classTeacher)],
       ["Students", (r) => r.students?.length || 0],
     ],
+    { singular: "Class" },
   ),
   subjects: c(
     "Subjects",
@@ -143,7 +172,7 @@ teachers: c(
       ["Subject", (r) => itemLabel(r.subject)],
       ["Status", "status"],
     ],
-    { options: { status: ["Present", "Absent", "Late"] } },
+    { singular: "Attendance", options: { status: ["Present", "Absent", "Late"] } },
   ),
   exams: c(
     "Exams",

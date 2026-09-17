@@ -4,28 +4,16 @@ import { ChevronRight, GraduationCap } from "lucide-react";
 import { toast } from "sonner";
 import { authService } from "../api/auth";
 import { useAuth } from "../contexts/AuthContext";
-import { human } from "../utils/formatters";
-
-const LOGIN_FIELDS = ["email", "password"];
-const REGISTER_FIELDS = ["firstName", "lastName", "email", "password", "role"];
 
 export default function AuthPage() {
-  const [isRegisterMode, setIsRegisterMode] = useState(false);
   const [form, setForm] = useState({});
   const [busy, setBusy] = useState(false);
 
   const { login, authenticated, checking } = useAuth();
   const navigate = useNavigate();
 
-  const fields = isRegisterMode ? REGISTER_FIELDS : LOGIN_FIELDS;
-
   const updateField = (key, value) =>
     setForm((current) => ({ ...current, [key]: value }));
-
-  const toggleMode = () => {
-    setIsRegisterMode((current) => !current);
-    setForm({});
-  };
 
   if (checking) {
     return <div className="page-loading">Checking your session…</div>;
@@ -40,10 +28,7 @@ export default function AuthPage() {
     setBusy(true);
 
     try {
-      const { data } = isRegisterMode
-        ? await authService.register(form)
-        : await authService.login(form);
-
+      const { data } = await authService.login(form);
       login(data);
       toast.success(data.message);
       navigate("/dashboard", { replace: true });
@@ -75,53 +60,38 @@ export default function AuthPage() {
           <GraduationCap /> CampusFlow
         </span>
 
-        <h2>{isRegisterMode ? "Create an account" : "Welcome back"}</h2>
-        <p>
-          {isRegisterMode
-            ? "Uses the backend’s public registration endpoint."
-            : "Sign in to your school workspace."}
-        </p>
+        <h2>Welcome back</h2>
+        <p>Sign in to your school workspace.</p>
 
-        {fields.map((field) => (
-          <label key={field}>
-            {human(field)}
-            {field === "role" ? (
-              <select
-                value={form.role || "student"}
-                onChange={(event) => updateField(field, event.target.value)}
-              >
-                <option value="student">Student</option>
-                <option value="teacher">Teacher</option>
-                <option value="admin">Admin</option>
-              </select>
-            ) : (
-              <input
-                required
-                minLength={field === "password" ? 6 : undefined}
-                type={
-                  field === "password"
-                    ? "password"
-                    : field === "email"
-                      ? "email"
-                      : "text"
-                }
-                value={form[field] || ""}
-                onChange={(event) => updateField(field, event.target.value)}
-              />
-            )}
-          </label>
-        ))}
+        <label>
+          Email
+          <input
+            required
+            type="email"
+            value={form.email || ""}
+            onChange={(event) => updateField("email", event.target.value)}
+          />
+        </label>
+
+        <label>
+          Password
+          <input
+            required
+            type="password"
+            minLength={6}
+            value={form.password || ""}
+            onChange={(event) => updateField("password", event.target.value)}
+          />
+        </label>
 
         <button className="primary full" disabled={busy}>
-          {busy ? "Please wait…" : isRegisterMode ? "Register" : "Sign in"}
+          {busy ? "Please wait…" : "Sign in"}
           <ChevronRight size={17} />
         </button>
 
-        <button type="button" className="auth-switch" onClick={toggleMode}>
-          {isRegisterMode
-            ? "Already have an account? Sign in"
-            : "Need an account? Register"}
-        </button>
+        <p className="auth-note">
+          Don&apos;t have an account? Ask school administration to create one for you.
+        </p>
       </form>
     </div>
   );

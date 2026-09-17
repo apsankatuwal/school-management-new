@@ -8,6 +8,7 @@ import { resources } from "../config/resources";
 import { userName } from "../utils/formatters";
 import Overview from "../components/dashboard/Overview";
 import ResourcePage from "../components/dashboard/ResourcePage";
+import StudentPortal from "../components/dashboard/StudentPortal";
 
 const defaultSectionFor = (role) => {
   if (role === "admin") return "overview";
@@ -49,6 +50,7 @@ export default function DashboardPage() {
   };
 
   const currentResource = resources[active];
+  const isStudentPortal = user.role === "student" && !currentResource;
 
   return (
     <div className="shell">
@@ -68,6 +70,16 @@ export default function DashboardPage() {
             >
               <LayoutDashboard size={19} />
               Overview
+            </button>
+          )}
+
+          {user.role === "student" && (
+            <button
+              className={isStudentPortal ? "active" : ""}
+              onClick={() => selectSection("profile")}
+            >
+              <GraduationCap size={19} />
+              My Portal
             </button>
           )}
 
@@ -108,7 +120,7 @@ export default function DashboardPage() {
             <h1>
               {active === "overview"
                 ? `Welcome, ${user.firstName}`
-                : currentResource?.label || "Your profile"}
+                : currentResource?.label || (isStudentPortal ? "My Portal" : "Your profile")}
             </h1>
           </div>
         </header>
@@ -117,6 +129,8 @@ export default function DashboardPage() {
           <Overview data={dashboardData} choose={selectSection} />
         ) : currentResource ? (
           <ResourcePage config={currentResource} role={user.role} />
+        ) : isStudentPortal ? (
+          <StudentPortal />
         ) : (
           <div className="content">
             <div className="panel">
@@ -125,10 +139,6 @@ export default function DashboardPage() {
               <p className="profile-id">
                 <span>MongoDB user ID</span>
                 <code>{user.id || user._id || "Unavailable"}</code>
-              </p>
-              <p>
-                The backend currently provides no student portal resource
-                endpoints.
               </p>
             </div>
           </div>
