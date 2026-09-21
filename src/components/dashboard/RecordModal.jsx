@@ -35,17 +35,33 @@ const buildInitialValues = (config, record) =>
 
 export default function RecordModal({ config, record, close, done }) {
   const maxDateOfBirth = today();
+
   const [values, setValues] = useState(() =>
     buildInitialValues(config, record),
   );
+
   const [busy, setBusy] = useState(false);
   const [linkedOptions, setLinkedOptions] = useState({});
 
   const updateField = (key, value) => {
-    setValues((current) => ({
-      ...current,
-      [key]: value,
-    }));
+    setValues((current) => {
+      const updated = {
+        ...current,
+        [key]: value,
+      };
+
+      // If fee is no longer Paid, remove payment details.
+      if (
+        config.key === "fees" &&
+        key === "status" &&
+        value !== "Paid"
+      ) {
+        updated.paidDate = "";
+        updated.paymentMethod = "";
+      }
+
+      return updated;
+    });
   };
 
   useEffect(() => {
@@ -100,7 +116,10 @@ export default function RecordModal({ config, record, close, done }) {
   const handleSubmit = async (event) => {
     event.preventDefault();
 
-    if (values.dateOfBirth && values.dateOfBirth > maxDateOfBirth) {
+    if (
+      values.dateOfBirth &&
+      values.dateOfBirth > maxDateOfBirth
+    ) {
       toast.error("Date of birth cannot be in the future.");
       return;
     }
@@ -120,12 +139,17 @@ export default function RecordModal({ config, record, close, done }) {
       console.log("Submitting:", body);
 
       if (record) {
-        await resourceService(config.path).update(record._id, body);
+        await resourceService(config.path).update(
+          record._id,
+          body,
+        );
       } else {
         await resourceService(config.path).create(body);
       }
 
-      toast.success(record ? "Record updated" : "Record created");
+      toast.success(
+        record ? "Record updated" : "Record created",
+      );
 
       done();
       close();
@@ -146,7 +170,8 @@ export default function RecordModal({ config, record, close, done }) {
       <form className="modal" onSubmit={handleSubmit}>
         <div className="modal-head">
           <h2>
-            {record ? "Update" : "Add"} {config.singular || config.label.slice(0, -1)}
+            {record ? "Update" : "Add"}{" "}
+            {config.singular || config.label.slice(0, -1)}
           </h2>
 
           <button type="button" onClick={close}>
@@ -162,11 +187,22 @@ export default function RecordModal({ config, record, close, done }) {
 
         <div className="form-grid">
           {config.fields.map((field) => {
+            // Payment fields only make sense when a fee is Paid.
+            if (
+              config.key === "fees" &&
+              (field === "paidDate" ||
+                field === "paymentMethod") &&
+              values.status !== "Paid"
+            ) {
+              return null;
+            }
+
             const linkedResource = linkedResources[field];
 
             const options = linkedResource
               ? linkedOptions[linkedResource] || []
-              : config.options?.[field] || selectOptions[field];
+              : config.options?.[field] ||
+                selectOptions[field];
 
             /*
              * Linked fields MUST use MongoDB IDs.
@@ -181,7 +217,10 @@ export default function RecordModal({ config, record, close, done }) {
                     required={!optionalFields.has(field)}
                     value={values[field] || ""}
                     onChange={(event) =>
-                      updateField(field, event.target.value)
+                      updateField(
+                        field,
+                        event.target.value,
+                      )
                     }
                   >
                     <option value="">
@@ -191,7 +230,10 @@ export default function RecordModal({ config, record, close, done }) {
                     {options.map((option) => {
                       if (typeof option === "string") {
                         return (
-                          <option key={option} value={option}>
+                          <option
+                            key={option}
+                            value={option}
+                          >
                             {option}
                           </option>
                         );
@@ -224,7 +266,10 @@ export default function RecordModal({ config, record, close, done }) {
                     required={!optionalFields.has(field)}
                     value={values[field] || ""}
                     onChange={(event) =>
-                      updateField(field, event.target.value)
+                      updateField(
+                        field,
+                        event.target.value,
+                      )
                     }
                   >
                     <option value="">
@@ -232,7 +277,10 @@ export default function RecordModal({ config, record, close, done }) {
                     </option>
 
                     {options.map((option) => (
-                      <option key={option} value={option}>
+                      <option
+                        key={option}
+                        value={option}
+                      >
                         {option}
                       </option>
                     ))}
@@ -254,10 +302,17 @@ export default function RecordModal({ config, record, close, done }) {
                         ? "number"
                         : "text"
                   }
-                  max={field === "dateOfBirth" ? maxDateOfBirth : undefined}
+                  max={
+                    field === "dateOfBirth"
+                      ? maxDateOfBirth
+                      : undefined
+                  }
                   value={values[field] || ""}
                   onChange={(event) =>
-                    updateField(field, event.target.value)
+                    updateField(
+                      field,
+                      event.target.value,
+                    )
                   }
                 />
               </label>
