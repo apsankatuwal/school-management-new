@@ -42,6 +42,8 @@ export default function RecordModal({ config, record, close, done }) {
 
   const [busy, setBusy] = useState(false);
   const [linkedOptions, setLinkedOptions] = useState({});
+  const isOptional = (field) =>
+    config.optionalFields?.includes(field) || optionalFields.has(field);
 
   const updateField = (key, value) => {
     setValues((current) => {
@@ -136,8 +138,6 @@ export default function RecordModal({ config, record, close, done }) {
           ]),
       );
 
-      console.log("Submitting:", body);
-
       if (record) {
         await resourceService(config.path).update(
           record._id,
@@ -214,7 +214,7 @@ export default function RecordModal({ config, record, close, done }) {
                   {human(field)}
 
                   <select
-                    required={!optionalFields.has(field)}
+                    required={!isOptional(field)}
                     value={values[field] || ""}
                     onChange={(event) =>
                       updateField(
@@ -263,7 +263,7 @@ export default function RecordModal({ config, record, close, done }) {
                   {human(field)}
 
                   <select
-                    required={!optionalFields.has(field)}
+                    required={!isOptional(field)}
                     value={values[field] || ""}
                     onChange={(event) =>
                       updateField(
@@ -293,28 +293,40 @@ export default function RecordModal({ config, record, close, done }) {
               <label key={field}>
                 {human(field)}
 
-                <input
-                  required={!optionalFields.has(field)}
-                  type={
-                    field.toLowerCase().includes("date")
-                      ? "date"
-                      : numericFields.has(field)
-                        ? "number"
-                        : "text"
-                  }
-                  max={
-                    field === "dateOfBirth"
-                      ? maxDateOfBirth
-                      : undefined
-                  }
-                  value={values[field] || ""}
-                  onChange={(event) =>
-                    updateField(
-                      field,
-                      event.target.value,
-                    )
-                  }
-                />
+                {config.textareaFields?.includes(field) ? (
+                  <textarea
+                    required={!isOptional(field)}
+                    value={values[field] || ""}
+                    onChange={(event) =>
+                      updateField(field, event.target.value)
+                    }
+                  />
+                ) : (
+                  <input
+                    required={!isOptional(field)}
+                    type={
+                      field === "password"
+                        ? "password"
+                        : field.toLowerCase().includes("date")
+                          ? "date"
+                          : numericFields.has(field)
+                            ? "number"
+                            : "text"
+                    }
+                    max={
+                      field === "dateOfBirth"
+                        ? maxDateOfBirth
+                        : undefined
+                    }
+                    value={values[field] || ""}
+                    onChange={(event) =>
+                      updateField(
+                        field,
+                        event.target.value,
+                      )
+                    }
+                  />
+                )}
               </label>
             );
           })}
