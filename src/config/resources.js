@@ -59,21 +59,24 @@ const c = (label, icon, path, key, roles, fields, cols, extra = {}) => ({
 });
 
 export const resources = {
-  users: c(
-    "Users",
-    Users,
-    "/admin/users",
-    "users",
-    ["admin"],
-    ["firstName", "lastName", "email", "password", "role", "phone", "isActive"],
-    [
-      ["Name", (r) => userName(r)],
-      ["Email", "email"],
-      ["Role", "role"],
-      ["Status", (r) => (r.isActive === false ? "Inactive" : "Active")],
-    ],
-    { search: true },
-  ),
+ users: c(
+  "Users",
+  Users,
+  "/admin/users",
+  "users",
+  ["admin"],
+  ["firstName", "lastName", "email", "password", "role", "phone", "isActive"],
+  [
+    ["Name", (r) => userName(r)],
+    ["Email", "email"],
+    ["Role", "role"],
+    ["Status", (r) => (r.isActive === false ? "Inactive" : "Active")],
+  ],
+  {
+    search: true,
+    options: { role: ["admin"] },
+  },
+),
   students: c(
     "Students",
     GraduationCap,

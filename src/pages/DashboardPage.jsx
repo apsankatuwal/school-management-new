@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { GraduationCap, LayoutDashboard, LogOut, Menu, X } from "lucide-react";
+import { CalendarCheck, GraduationCap, LayoutDashboard, LogOut, Menu, X } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "../contexts/AuthContext";
 import { dashboardService } from "../api/resources";
@@ -9,6 +9,7 @@ import { userName } from "../utils/formatters";
 import Overview from "../components/dashboard/Overview";
 import ResourcePage from "../components/dashboard/ResourcePage";
 import StudentPortal from "../components/dashboard/StudentPortal";
+import BulkAttendance from "../components/dashboard/BulkAttendance";
 
 const defaultSectionFor = (role) => {
   if (role === "admin") return "overview";
@@ -51,6 +52,7 @@ export default function DashboardPage() {
 
   const currentResource = resources[active];
   const isStudentPortal = user.role === "student" && !currentResource;
+  const canTakeAttendance = user.role === "admin" || user.role === "teacher";
 
   return (
     <div className="shell">
@@ -70,6 +72,16 @@ export default function DashboardPage() {
             >
               <LayoutDashboard size={19} />
               Overview
+            </button>
+          )}
+
+          {canTakeAttendance && (
+            <button
+              className={active === "bulk-attendance" ? "active" : ""}
+              onClick={() => selectSection("bulk-attendance")}
+            >
+              <CalendarCheck size={19} />
+              Take Attendance
             </button>
           )}
 
@@ -120,13 +132,17 @@ export default function DashboardPage() {
             <h1>
               {active === "overview"
                 ? `Welcome, ${user.firstName}`
-                : currentResource?.label || (isStudentPortal ? "My Portal" : "Your profile")}
+                : active === "bulk-attendance"
+                  ? "Take Attendance"
+                  : currentResource?.label || (isStudentPortal ? "My Portal" : "Your profile")}
             </h1>
           </div>
         </header>
 
         {active === "overview" ? (
           <Overview data={dashboardData} choose={selectSection} />
+        ) : active === "bulk-attendance" ? (
+          <BulkAttendance />
         ) : currentResource ? (
           <ResourcePage config={currentResource} role={user.role} />
         ) : isStudentPortal ? (

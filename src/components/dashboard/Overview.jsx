@@ -6,6 +6,7 @@ import {
   GraduationCap,
   LayoutDashboard,
 } from "lucide-react";
+import { date as formatDate } from "../../utils/formatters";
 
 export default function Overview({ data, choose }) {
   const cards = [
@@ -15,16 +16,17 @@ export default function Overview({ data, choose }) {
     { label: "Subjects", value: data.totalSubjects, icon: BookOpen, id: "subjects", color: "pink" },
   ];
 
+  const attendancePct = data.attendanceThisMonth ?? 0;
+  const atRisk = data.studentsAtRisk || [];
+  const upcoming = data.upcoming || [];
+
   return (
     <div className="content">
       <section className="hero-banner">
         <div>
           <span>SCHOOL MANAGEMENT</span>
           <h2>Your school, at a glance.</h2>
-          <p>
-            Keep track of people, learning, and operations from one calm
-            workspace.
-          </p>
+          <p>Keep track of people, learning, and operations from one calm workspace.</p>
         </div>
         <CalendarCheck size={120} />
       </section>
@@ -78,6 +80,110 @@ export default function Overview({ data, choose }) {
             <ClipboardCheck />
             Record results
           </button>
+        </div>
+      </section>
+
+      <section className="overview-grid">
+        <div className="panel">
+          <div className="panel-title">
+            <div>
+              <span className="eyebrow">ATTENDANCE</span>
+              <h3>This month</h3>
+            </div>
+            <button onClick={() => choose("attendance")}>
+              View attendance <ChevronRight size={15} />
+            </button>
+          </div>
+          <div
+            style={{
+              background: "#e6e6e6",
+              borderRadius: 999,
+              height: 10,
+              overflow: "hidden",
+              margin: "12px 0 8px",
+            }}
+          >
+            <div
+              style={{
+                width: `${attendancePct}%`,
+                background: attendancePct >= 90 ? "#22c55e" : attendancePct >= 75 ? "#f59e0b" : "#ef4444",
+                height: "100%",
+                borderRadius: 999,
+                transition: "width 0.3s ease",
+              }}
+            />
+          </div>
+          <p style={{ margin: 0, fontWeight: 700, fontSize: 20 }}>{attendancePct}% present</p>
+        </div>
+
+        <div className="panel">
+          <div className="panel-title">
+            <div>
+              <span className="eyebrow">AT RISK</span>
+              <h3>Below 75% attendance</h3>
+            </div>
+            <button onClick={() => choose("students")}>
+              View students <ChevronRight size={15} />
+            </button>
+          </div>
+          {atRisk.length ? (
+            <div className="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Student</th>
+                    <th>Class</th>
+                    <th>Attendance</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {atRisk.slice(0, 6).map((s) => (
+                    <tr key={s.studentId}>
+                      <td>{s.name} ({s.admissionNumber})</td>
+                      <td>{s.className} · {s.section}</td>
+                      <td>{s.percentage}%</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <p>No students currently below 75% attendance.</p>
+          )}
+        </div>
+      </section>
+
+      <section className="table-card">
+        <div className="table-head">
+          <h2>Upcoming</h2>
+        </div>
+        <div className="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Type</th>
+                <th>Event</th>
+                <th>Date</th>
+                <th>When</th>
+              </tr>
+            </thead>
+            <tbody>
+              {upcoming.length ? (
+                upcoming.map((item, i) => (
+                  <tr key={i}>
+                    <td>{item.type === "exam" ? "📅 Exam" : "📝 Assignment"}</td>
+                    <td>{item.label}</td>
+                    <td>{formatDate(item.date)}</td>
+                    <td>{item.daysAway}</td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td className="empty" colSpan="4">Nothing coming up in the next 30 days.</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </div>
       </section>
     </div>

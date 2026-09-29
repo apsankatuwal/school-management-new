@@ -4,14 +4,24 @@ export const date = (value) =>
 export const userName = (user) =>
   user?.firstName ? `${user.firstName} ${user.lastName || ""}`.trim() : "—";
 
-export const itemLabel = (item, fallback = "—") =>
-  item?.admissionNumber ||
-  item?.employeeId ||
-  item?.subjectName ||
-  item?.examName ||
-  item?.className ||
-  fallback;
+export const itemLabel = (item, fallback = "—") => {
+  if (!item) return fallback;
 
-// "firstName" -> "First name"
+  const name = userName(item.user);
+  if (name !== "—") {
+    const code = item.admissionNumber || item.employeeId;
+    return code ? `${name} (${code})` : name;
+  }
+
+  return (
+    item.subjectName ||
+    item.examName ||
+    item.className ||
+    item.admissionNumber ||
+    item.employeeId ||
+    fallback
+  );
+};
+
 export const human = (key) =>
   key.replace(/([A-Z])/g, " $1").replace(/^./, (c) => c.toUpperCase());
