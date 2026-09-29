@@ -160,26 +160,25 @@ export const resources = {
       ["Credits", "creditHours"],
     ],
   ),
-  attendance: c(
-    "Attendance",
-    CalendarCheck,
-    "/attendance",
-    "attendance",
-    ["admin", "teacher"],
-    ["student", "class", "subject", "teacher", "date", "status"],
-    [
-      ["Student", (r) => itemLabel(r.student)],
-      ["Date", (r) => date(r.date)],
-      ["Subject", (r) => itemLabel(r.subject)],
-      ["Status", "status"],
-    ],
-    {
-      singular: "Attendance",
-      options: { status: ["Present", "Absent", "Late"] },
-      writeRoles: [],
-      deleteRoles: [],
-    },
-  ),
+attendance: c(
+  "Attendance",
+  CalendarCheck,
+  "/attendance",
+  "attendance",
+  ["admin", "teacher"],
+  ["student", "class", "subject", "teacher", "date", "status"],
+  [
+    ["Student", (r) => itemLabel(r.student)],
+    ["Date", (r) => date(r.date)],
+    ["Subject", (r) => itemLabel(r.subject)],
+    ["Status", "status"],
+  ],
+  {
+    singular: "Attendance",
+    options: { status: ["Present", "Absent", "Late"] },
+    deleteRoles: ["admin"], // only admin can delete — teachers can still add/edit
+  },
+),
   notices: c(
     "Notices",
     FileText,
