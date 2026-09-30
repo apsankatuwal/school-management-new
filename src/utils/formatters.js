@@ -13,14 +13,11 @@ export const itemLabel = (item, fallback = "—") => {
     return code ? `${name} (${code})` : name;
   }
 
-  return (
-    item.subjectName ||
-    item.examName ||
-    item.className ||
-    item.admissionNumber ||
-    item.employeeId ||
-    fallback
-  );
+  if (item.className) {
+    return item.section ? `${item.className} · ${item.section}` : item.className;
+  }
+
+  return item.subjectName || item.examName || item.admissionNumber || item.employeeId || fallback;
 };
 
 export const human = (key) =>

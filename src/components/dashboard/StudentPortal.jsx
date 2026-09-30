@@ -90,9 +90,9 @@ export default function StudentPortal() {
             <span>Admission number</span>
             <b>{profile.admissionNumber}</b>
           </div>
-          <div>
+                   <div>
             <span>Class</span>
-            <b>{profile.className} · {profile.section}</b>
+            <b>{profile.class ? `${profile.class.className} · ${profile.class.section}` : "—"}</b>
           </div>
           <div>
             <span>Roll number</span>

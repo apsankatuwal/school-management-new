@@ -27,7 +27,7 @@ export const numericFields = new Set([
     "remarks",
     "paidDate",
     "classTeacher",
-    "password", // required on create, but leave blank on edit to keep the current one
+    "password",
     "isActive",
     "phone",
   ]),
@@ -89,9 +89,7 @@ export const resources = {
       "email",
       "password",
       "phone",
-      "admissionNumber",
-      "className",
-      "section",
+      "class",
       "rollNumber",
       "gender",
       "dateOfBirth",
@@ -102,7 +100,7 @@ export const resources = {
     [
       ["Student", (r) => userName(r.user)],
       ["Admission", "admissionNumber"],
-      ["Class", (r) => `${r.className} · ${r.section}`],
+      ["Class", (r) => (r.class ? `${r.class.className} · ${r.class.section}` : "—")],
       ["Guardian", "guardianName"],
     ],
     { search: true },
@@ -179,7 +177,7 @@ attendance: c(
   {
     singular: "Attendance",
     options: { status: ["Present", "Absent", "Late"] },
-    deleteRoles: ["admin"], // only admin can delete — teachers can still add/edit
+    deleteRoles: ["admin"],
   },
 ),
   notices: c(
